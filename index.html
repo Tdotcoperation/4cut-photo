@@ -33,7 +33,7 @@
     .logo{font-size:20px;font-weight:860;letter-spacing:-.06em}
     .logo span{color:var(--accent)}
     .step-label{font-size:12px;font-weight:650;color:var(--muted)}
-    .progress{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:13px}
+    .progress{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:13px}
     .progress i{height:4px;border-radius:999px;background:#ededf2;transition:.25s}
     .progress i.active{background:var(--text)}
     main{padding:26px 20px 118px}
@@ -59,6 +59,17 @@
     .privacy{display:flex;gap:9px;align-items:flex-start;margin-top:15px;padding:13px 14px;border-radius:16px;background:#f7f7f9;color:#6e6e77;font-size:12px;line-height:1.5}
     .privacy b{color:#222228}
     .format-note{font-size:12px;color:#8b8b95;margin-top:12px;line-height:1.45}
+    .crop-stage{background:#17171d;border-radius:26px;padding:14px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+    .crop-canvas{display:block;width:100%;aspect-ratio:7/6;background:#111;border-radius:18px;touch-action:none}
+    .crop-counter{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 2px 10px}
+    .crop-counter strong{font-size:16px;font-weight:800}
+    .crop-counter span{font-size:12px;color:var(--muted)}
+    .zoom-row{display:grid;grid-template-columns:30px 1fr 30px;gap:10px;align-items:center;padding:14px 2px 2px}
+    .zoom-row span{text-align:center;color:#767680;font-size:18px;font-weight:700}
+    .zoom-row input[type="range"]{width:100%;accent-color:var(--accent)}
+    .crop-actions{display:flex;justify-content:center;margin-top:12px}
+    .crop-reset{height:40px;padding:0 16px;border-radius:12px;background:#f0f0f4;color:#33333a;font-size:13px;font-weight:730}
+    .crop-help{text-align:center;font-size:12px;color:#8b8b95;line-height:1.5;margin-top:12px}
     .choices{display:grid;gap:14px}
     .choice{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:24px;background:#fff;text-align:left;display:grid;grid-template-columns:108px 1fr;gap:16px;align-items:center;transition:.2s}
     .choice.selected{border-color:var(--accent);box-shadow:0 0 0 3px rgba(93,91,247,.10)}
@@ -117,7 +128,7 @@
       <div class="step-label" id="stepLabel">사진 · 1/4</div>
     </div>
     <div class="progress" aria-hidden="true">
-      <i class="active"></i><i></i><i></i><i></i>
+      <i class="active"></i><i></i><i></i><i></i><i></i>
     </div>
   </header>
 
@@ -141,6 +152,26 @@
     </section>
 
     <section class="screen" data-step="1">
+      <h1>사진을<br>맞춰주세요.</h1>
+      <p class="lead">밝은 네모 안이 실제 네컷에 들어가요. 사진을 움직이거나 확대해 원하는 부분을 맞춰주세요.</p>
+
+      <div class="crop-counter">
+        <strong id="cropTitle">사진 1 / 4</strong>
+        <span>3:2 네컷 비율</span>
+      </div>
+      <div class="crop-stage">
+        <canvas id="cropCanvas" class="crop-canvas" width="840" height="720"></canvas>
+      </div>
+      <div class="zoom-row">
+        <span>−</span>
+        <input id="zoomRange" type="range" min="1" max="3" value="1" step="0.01" aria-label="사진 확대" />
+        <span>＋</span>
+      </div>
+      <div class="crop-actions"><button id="cropReset" class="crop-reset" type="button">위치 초기화</button></div>
+      <div class="crop-help">드래그해서 위치를 옮길 수 있어요. 휴대폰에서는 두 손가락으로 확대·축소할 수도 있어요.</div>
+    </section>
+
+    <section class="screen" data-step="2">
       <h1>프레임을<br>고르세요.</h1>
       <p class="lead">사진을 담는 방식만 선택하면 돼요.</p>
       <div class="choices">
@@ -177,7 +208,7 @@
       </div>
     </section>
 
-    <section class="screen" data-step="2">
+    <section class="screen" data-step="3">
       <h1>기억을<br>적어주세요.</h1>
       <p class="lead">날짜와 한 줄 문구는 선택이에요.</p>
 
@@ -205,7 +236,7 @@
       <div class="mini-preview-wrap"><canvas id="miniCanvas"></canvas></div>
     </section>
 
-    <section class="screen" data-step="3">
+    <section class="screen" data-step="4">
       <h1>이대로<br>저장할까요?</h1>
       <p class="lead">아래 모습 그대로 고화질 PNG로 다운로드돼요.</p>
       <div class="review-shell"><canvas id="finalCanvas"></canvas></div>
@@ -242,6 +273,7 @@
   const state = {
     step: 0,
     items: [],
+    cropIndex: 0,
     frame: "strip",
     date: "",
     showDate: true,
@@ -259,6 +291,10 @@
     next: document.getElementById("nextButton"),
     back: document.getElementById("backButton"),
     choices: [...document.querySelectorAll(".choice")],
+    cropCanvas: document.getElementById("cropCanvas"),
+    cropTitle: document.getElementById("cropTitle"),
+    zoomRange: document.getElementById("zoomRange"),
+    cropReset: document.getElementById("cropReset"),
     dateInput: document.getElementById("dateInput"),
     dateToggle: document.getElementById("dateToggle"),
     messageInput: document.getElementById("messageInput"),
@@ -272,7 +308,7 @@
     again: document.getElementById("againButton")
   };
 
-  const stepNames = ["사진", "프레임", "문구", "완성"];
+  const stepNames = ["사진", "사진 맞추기", "프레임", "문구", "완성"];
   const today = new Date();
   state.date = [
     today.getFullYear(),
@@ -289,17 +325,26 @@
   }
 
   function setStep(nextStep) {
-    state.step = Math.max(0, Math.min(3, nextStep));
+    state.step = Math.max(0, Math.min(4, nextStep));
     el.screens.forEach((screen, i) => screen.classList.toggle("active", i === state.step));
     el.bars.forEach((bar, i) => bar.classList.toggle("active", i <= state.step));
-    el.stepLabel.textContent = stepNames[state.step] + " · " + (state.step + 1) + "/4";
+
+    if (state.step === 1) {
+      el.stepLabel.textContent = "사진 맞추기 · " + (state.cropIndex + 1) + "/4";
+      el.cropTitle.textContent = "사진 " + (state.cropIndex + 1) + " / 4";
+      syncCropControls();
+      requestAnimationFrame(renderCropEditor);
+    } else {
+      el.stepLabel.textContent = stepNames[state.step] + " · " + (state.step + 1) + "/5";
+    }
+
     el.back.style.display = state.step === 0 ? "none" : "";
-    el.next.classList.toggle("accent", state.step === 3);
-    el.next.textContent = state.step === 3 ? "OK · 다운로드" : "다음";
+    el.next.classList.toggle("accent", state.step === 4);
+    el.next.textContent = state.step === 4 ? "OK · 다운로드" : "다음";
     updateNextState();
 
-    if (state.step === 2) renderMini();
-    if (state.step === 3) renderFinal();
+    if (state.step === 3) renderMini();
+    if (state.step === 4) renderFinal();
     window.scrollTo({top:0,behavior:"smooth"});
   }
 
@@ -452,7 +497,8 @@
         state.items.push({
           originalName: file.name || "photo",
           image: loaded.img,
-          previewUrl: loaded.url
+          previewUrl: loaded.url,
+          crop: {cx:0.5, cy:0.5, zoom:1}
         });
         renderSlots();
       } catch (error) {
@@ -508,14 +554,46 @@
     renderMini();
   });
 
-  el.back.addEventListener("click", () => setStep(state.step - 1));
-
-  el.next.addEventListener("click", async () => {
-    if (state.step === 0 && state.items.length !== 4) {
-      toast("사진 4장을 모두 골라주세요.");
+  el.back.addEventListener("click", () => {
+    if (state.step === 1) {
+      if (state.cropIndex > 0) {
+        state.cropIndex -= 1;
+        setStep(1);
+      } else {
+        setStep(0);
+      }
       return;
     }
-    if (state.step < 3) {
+    if (state.step === 2) {
+      state.cropIndex = 3;
+      setStep(1);
+      return;
+    }
+    setStep(state.step - 1);
+  });
+
+  el.next.addEventListener("click", async () => {
+    if (state.step === 0) {
+      if (state.items.length !== 4) {
+        toast("사진 4장을 모두 골라주세요.");
+        return;
+      }
+      state.cropIndex = 0;
+      setStep(1);
+      return;
+    }
+
+    if (state.step === 1) {
+      if (state.cropIndex < 3) {
+        state.cropIndex += 1;
+        setStep(1);
+      } else {
+        setStep(2);
+      }
+      return;
+    }
+
+    if (state.step < 4) {
       setStep(state.step + 1);
       return;
     }
@@ -532,6 +610,203 @@
     const sy = Math.max(0, (ih - sh) / 2);
     ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
   }
+
+  function cropSourceRect(item) {
+    const img = item.image;
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
+    const targetRatio = 3 / 2;
+    let sw, sh;
+
+    if (iw / ih > targetRatio) {
+      sh = ih;
+      sw = ih * targetRatio;
+    } else {
+      sw = iw;
+      sh = iw / targetRatio;
+    }
+
+    const zoom = Math.max(1, Math.min(3, item.crop?.zoom || 1));
+    sw /= zoom;
+    sh /= zoom;
+
+    const halfX = sw / 2;
+    const halfY = sh / 2;
+    let cx = (item.crop?.cx ?? 0.5) * iw;
+    let cy = (item.crop?.cy ?? 0.5) * ih;
+
+    cx = Math.max(halfX, Math.min(iw - halfX, cx));
+    cy = Math.max(halfY, Math.min(ih - halfY, cy));
+
+    item.crop.cx = iw ? cx / iw : 0.5;
+    item.crop.cy = ih ? cy / ih : 0.5;
+    item.crop.zoom = zoom;
+
+    return {sx:cx-halfX, sy:cy-halfY, sw, sh, iw, ih};
+  }
+
+  function drawCrop(ctx, item, x, y, w, h) {
+    const r = cropSourceRect(item);
+    ctx.drawImage(item.image, r.sx, r.sy, r.sw, r.sh, x, y, w, h);
+  }
+
+  function syncCropControls() {
+    const item = state.items[state.cropIndex];
+    if (!item) return;
+    if (!item.crop) item.crop = {cx:0.5, cy:0.5, zoom:1};
+    el.zoomRange.value = String(item.crop.zoom || 1);
+    el.cropTitle.textContent = "사진 " + (state.cropIndex + 1) + " / 4";
+  }
+
+  function cropEditorGeometry() {
+    const canvas = el.cropCanvas;
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const cropW = cw * 0.84;
+    const cropH = cropW * 2 / 3;
+    return {
+      cw, ch, cropW, cropH,
+      cropX:(cw-cropW)/2,
+      cropY:(ch-cropH)/2
+    };
+  }
+
+  function renderCropEditor() {
+    if (state.step !== 1) return;
+    const item = state.items[state.cropIndex];
+    if (!item) return;
+    const canvas = el.cropCanvas;
+    const ctx = canvas.getContext("2d");
+    const g = cropEditorGeometry();
+    const r = cropSourceRect(item);
+    const scale = g.cropW / r.sw;
+    const centerX = r.sx + r.sw / 2;
+    const centerY = r.sy + r.sh / 2;
+    const drawX = g.cw / 2 - centerX * scale;
+    const drawY = g.ch / 2 - centerY * scale;
+
+    ctx.clearRect(0,0,g.cw,g.ch);
+    ctx.fillStyle = "#0d0d11";
+    ctx.fillRect(0,0,g.cw,g.ch);
+    ctx.drawImage(item.image, drawX, drawY, r.iw * scale, r.ih * scale);
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,.62)";
+    ctx.beginPath();
+    ctx.rect(0,0,g.cw,g.ch);
+    ctx.rect(g.cropX,g.cropY,g.cropW,g.cropH);
+    ctx.fill("evenodd");
+    ctx.restore();
+
+    ctx.strokeStyle = "rgba(255,255,255,.96)";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(g.cropX,g.cropY,g.cropW,g.cropH);
+
+    ctx.strokeStyle = "rgba(255,255,255,.34)";
+    ctx.lineWidth = 2;
+    for (let i=1;i<3;i++) {
+      const vx = g.cropX + g.cropW * i / 3;
+      const hy = g.cropY + g.cropH * i / 3;
+      ctx.beginPath(); ctx.moveTo(vx,g.cropY); ctx.lineTo(vx,g.cropY+g.cropH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(g.cropX,hy); ctx.lineTo(g.cropX+g.cropW,hy); ctx.stroke();
+    }
+  }
+
+  let cropPointers = new Map();
+  let dragLast = null;
+  let pinchStartDistance = 0;
+  let pinchStartZoom = 1;
+
+  function clampCrop(item) {
+    cropSourceRect(item);
+  }
+
+  function moveCropByPixels(dx, dy) {
+    const item = state.items[state.cropIndex];
+    if (!item) return;
+    const g = cropEditorGeometry();
+    const r = cropSourceRect(item);
+    const sourcePerPixel = r.sw / g.cropW;
+    item.crop.cx -= (dx * sourcePerPixel) / r.iw;
+    item.crop.cy -= (dy * sourcePerPixel) / r.ih;
+    clampCrop(item);
+    renderCropEditor();
+  }
+
+  el.zoomRange.addEventListener("input", () => {
+    const item = state.items[state.cropIndex];
+    if (!item) return;
+    item.crop.zoom = Number(el.zoomRange.value);
+    clampCrop(item);
+    renderCropEditor();
+  });
+
+  el.cropReset.addEventListener("click", () => {
+    const item = state.items[state.cropIndex];
+    if (!item) return;
+    item.crop = {cx:0.5, cy:0.5, zoom:1};
+    syncCropControls();
+    renderCropEditor();
+  });
+
+  el.cropCanvas.addEventListener("pointerdown", (e) => {
+    el.cropCanvas.setPointerCapture?.(e.pointerId);
+    cropPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if (cropPointers.size === 1) {
+      dragLast = {x:e.clientX,y:e.clientY};
+    } else if (cropPointers.size === 2) {
+      const pts = [...cropPointers.values()];
+      pinchStartDistance = Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+      pinchStartZoom = state.items[state.cropIndex]?.crop?.zoom || 1;
+      dragLast = null;
+    }
+  });
+
+  el.cropCanvas.addEventListener("pointermove", (e) => {
+    if (!cropPointers.has(e.pointerId)) return;
+    cropPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+
+    if (cropPointers.size === 1 && dragLast) {
+      const dx = e.clientX - dragLast.x;
+      const dy = e.clientY - dragLast.y;
+      dragLast = {x:e.clientX,y:e.clientY};
+      const scaleX = el.cropCanvas.width / el.cropCanvas.getBoundingClientRect().width;
+      moveCropByPixels(dx * scaleX, dy * scaleX);
+    } else if (cropPointers.size === 2) {
+      const pts = [...cropPointers.values()];
+      const d = Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+      if (pinchStartDistance > 0) {
+        const item = state.items[state.cropIndex];
+        item.crop.zoom = Math.max(1,Math.min(3,pinchStartZoom * d / pinchStartDistance));
+        el.zoomRange.value = String(item.crop.zoom);
+        clampCrop(item);
+        renderCropEditor();
+      }
+    }
+  });
+
+  function endCropPointer(e) {
+    cropPointers.delete(e.pointerId);
+    if (cropPointers.size === 1) {
+      const p = [...cropPointers.values()][0];
+      dragLast = {x:p.x,y:p.y};
+    } else {
+      dragLast = null;
+    }
+  }
+
+  el.cropCanvas.addEventListener("pointerup", endCropPointer);
+  el.cropCanvas.addEventListener("pointercancel", endCropPointer);
+
+  el.cropCanvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const item = state.items[state.cropIndex];
+    if (!item) return;
+    item.crop.zoom = Math.max(1,Math.min(3,(item.crop.zoom || 1) + (e.deltaY > 0 ? -0.08 : 0.08)));
+    el.zoomRange.value = String(item.crop.zoom);
+    clampCrop(item);
+    renderCropEditor();
+  }, {passive:false});
 
   function formatDate(value) {
     if (!value) return "";
@@ -583,11 +858,11 @@
     if (state.frame === "strip") {
       const margin = 72;
       const photoW = 1056;
-      const photoH = 700;
+      const photoH = 704;
       const gap = 28;
       let y = 72;
       state.items.forEach(item => {
-        drawCover(ctx, item.image, margin, y, photoW, photoH);
+        drawCrop(ctx, item, margin, y, photoW, photoH);
         y += photoH + gap;
       });
 
@@ -633,12 +908,12 @@
 
         const inner = 48;
         const photoW = stripW - inner * 2;
-        const photoH = 570;
+        const photoH = 636;
         const gap = 24;
         let py = stripY + 48;
 
         state.items.forEach(item => {
-          drawCover(ctx, item.image, x + inner, py, photoW, photoH);
+          drawCrop(ctx, item, x + inner, py, photoW, photoH);
           py += photoH + gap;
         });
 
@@ -684,7 +959,7 @@
       ctx.restore();
     } else {
       const photoH = 800;
-      state.items.forEach((item, i) => drawCover(ctx, item.image, 0, i * photoH, 1200, photoH));
+      state.items.forEach((item, i) => drawCrop(ctx, item, 0, i * photoH, 1200, photoH));
 
       const hasFooter = Boolean(state.message.trim()) || (state.showDate && state.date);
       if (hasFooter) {
@@ -770,6 +1045,7 @@
   el.again.addEventListener("click", () => {
     state.items.forEach(item => item.previewUrl && URL.revokeObjectURL(item.previewUrl));
     state.items = [];
+    state.cropIndex = 0;
     state.frame = "strip";
     state.showDate = true;
     state.message = "";
