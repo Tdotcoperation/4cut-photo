@@ -561,9 +561,9 @@
     const hasFooter = Boolean(state.message.trim()) || (state.showDate && state.date);
     return {
       width: Math.round(1200 * ratio),
-      height: Math.round((hasFooter ? 3440 : 3200) * ratio),
+      height: Math.round((hasFooter ? 3540 : 3200) * ratio),
       baseWidth:1200,
-      baseHeight:hasFooter ? 3440 : 3200
+      baseHeight:hasFooter ? 3540 : 3200
     };
   }
 
@@ -603,14 +603,14 @@
 
       if (state.showDate && state.date) {
         ctx.fillStyle = "#666670";
-        ctx.font = "580 42px 'Wanted Sans Variable', sans-serif";
-        ctx.fillText(formatDate(state.date), 600, footerTop + (state.message.trim() ? 148 : 82), 1000);
+        ctx.font = "650 72px 'Wanted Sans Variable', sans-serif";
+        ctx.fillText(formatDate(state.date), 600, footerTop + (state.message.trim() ? 170 : 100), 1000);
       }
 
       ctx.fillStyle = "#111116";
-      ctx.font = "850 32px 'Wanted Sans Variable', sans-serif";
-      ctx.letterSpacing = "1px";
-      ctx.fillText("MOMENT4", 600, spec.baseHeight - 58);
+      ctx.font = "900 104px 'Wanted Sans Variable', sans-serif";
+      ctx.letterSpacing = "-1px";
+      ctx.fillText("MOMENT4", 600, spec.baseHeight - 92);
     } else if (state.frame === "a4") {
       const pageW = 2480;
       const pageH = 3508;
@@ -654,13 +654,13 @@
 
         if (state.showDate && state.date) {
           ctx.fillStyle = "#666670";
-          ctx.font = "580 39px 'Wanted Sans Variable', sans-serif";
-          ctx.fillText(formatDate(state.date), x + stripW / 2, footerTop + (state.message.trim() ? 132 : 72), stripW - 100);
+          ctx.font = "650 64px 'Wanted Sans Variable', sans-serif";
+          ctx.fillText(formatDate(state.date), x + stripW / 2, footerTop + (state.message.trim() ? 154 : 88), stripW - 100);
         }
 
         ctx.fillStyle = "#111116";
-        ctx.font = "850 29px 'Wanted Sans Variable', sans-serif";
-        ctx.fillText("MOMENT4", x + stripW / 2, stripY + stripH - 54);
+        ctx.font = "900 84px 'Wanted Sans Variable', sans-serif";
+        ctx.fillText("MOMENT4", x + stripW / 2, stripY + stripH - 92);
         ctx.restore();
       }
 
@@ -690,7 +690,7 @@
       if (hasFooter) {
         const fy = 3200;
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, fy, 1200, 240);
+        ctx.fillRect(0, fy, 1200, 340);
         ctx.fillStyle = "#111116";
         ctx.textBaseline = "middle";
 
@@ -702,14 +702,14 @@
 
         if (state.showDate && state.date) {
           ctx.fillStyle = "#666670";
-          ctx.font = "580 38px 'Wanted Sans Variable', sans-serif";
-          ctx.fillText(formatDate(state.date), 54, fy + 154);
+          ctx.font = "650 62px 'Wanted Sans Variable', sans-serif";
+          ctx.fillText(formatDate(state.date), 54, fy + 176);
         }
 
         ctx.fillStyle = "#111116";
         ctx.textAlign = "right";
-        ctx.font = "850 29px 'Wanted Sans Variable', sans-serif";
-        ctx.fillText("MOMENT4", 1146, fy + 120);
+        ctx.font = "900 76px 'Wanted Sans Variable', sans-serif";
+        ctx.fillText("MOMENT4", 1146, fy + 190);
       }
     }
     ctx.restore();
